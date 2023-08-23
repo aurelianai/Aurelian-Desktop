@@ -1,0 +1,28 @@
+[package]
+name = "aurelian-desktop"
+version = "0.1.0"
+description = "Local Inference"
+authors = ["Ethan Steere"]
+license = "MIT License"
+repository = "https://github.com/aurelianai/Aurelian-Desktop"
+default-run = "aurelian-desktop"
+edition = "2021"
+rust-version = "1.59"
+
+[build-dependencies]
+tauri-build = { version = "1.2.1", features = [] }
+
+[dependencies]
+persistence = { path = "../persistence" }
+tauri = { version = "1.2.4", features = [ "shell-sidecar", "fs-all", "http-all", "path-all", "process-command-api"] }
+reqwest = { version = "0.11", features= ["json"] }
+llm = { git = "https://github.com/rustformers/llm", version = "0.2.0-dev" }
+
+
+[features]
+# by default Tauri runs in production mode
+# when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
+default = ["custom-protocol"]
+# this feature is used for production builds where `devPath` points to the filesystem
+# DO NOT remove this
+custom-protocol = ["tauri/custom-protocol"]

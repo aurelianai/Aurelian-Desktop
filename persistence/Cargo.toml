@@ -1,0 +1,18 @@
+[package]
+name = "persistence"
+version = "0.1.0"
+edition = "2021"
+publish = false
+# I use an ignored local sqlite db for testing migrations
+exclude = ["aurelian.db", ".env"]
+
+[lib]
+name = "persistence"
+path = "src/lib.rs"
+
+[dependencies]
+tauri = "1.2.4"
+diesel = { version = "2.0.4", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
+diesel_migrations = { version = "2.0.0", features = ["sqlite"] }
+libsqlite3-sys = { version = "0.26.0", features = ["bundled"] }
+serde = "1.0.164"

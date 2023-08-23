@@ -8,13 +8,12 @@
   },
   "package": {
     "productName": "Aurelian Desktop",
-    "version": "0.1.0"
+    "version": "0.0.1"
   },
   "tauri": {
     "allowlist": {
       "fs": {
         "scope": [
-          "$RESOURCE/**",
           "$APPDATA/*"
         ],
         "all": true

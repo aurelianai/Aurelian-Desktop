@@ -9,6 +9,5 @@ node_modules
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 src-tauri/target
-persistence/target
-persistence/aurelian.db
-persistence/.env
+src-tauri/aurelian.db
+src-tauri/.env

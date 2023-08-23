@@ -1,26 +1,15 @@
-pub mod chats;
-pub mod messages;
-pub mod schema;
-
+use crate::AppState;
 use diesel::prelude::*;
 use diesel::sqlite::Sqlite;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use std::sync::Mutex;
 use tauri::{AppHandle, State};
-
-pub struct DatabaseConnectionState {
-    pub conn: Mutex<Option<SqliteConnection>>,
-}
 
 /// Creates a [DatabaseConnection] to be managed by [tauri::State]. This is called in the setup function in the main Aurelian-Desktop crate `main.rs`
 /// This must return a Result see https://github.com/tauri-apps/tauri/issues/2533
-pub fn connect_db(
-    state: State<'_, DatabaseConnectionState>,
-    app_handle: AppHandle,
-) -> Result<(), ()> {
+pub fn connect_db(state: State<'_, AppState>, app_handle: AppHandle) -> Result<(), ()> {
     // Panics if mutex is poisoned
     let db_url = get_conn_string(app_handle);
-    let mut db_conn_ptr = state.conn.lock().unwrap();
+    let mut db_conn_ptr = state.db.lock().unwrap();
     *db_conn_ptr = Some(SqliteConnection::establish(&db_url).unwrap());
     Ok(())
 }
@@ -29,8 +18,7 @@ pub fn connect_db(
 pub fn get_conn_string(app_handle: AppHandle) -> String {
     let mut app_data_dir = app_handle.path_resolver().app_data_dir().unwrap();
     app_data_dir.push("aurelian.db");
-    let db_path = app_data_dir.to_str().unwrap();
-    return String::from(db_path);
+    return String::from(app_data_dir.to_str().unwrap());
 }
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();

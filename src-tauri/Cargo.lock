@@ -110,8 +110,10 @@ dependencies = [
 name = "aurelian-desktop"
 version = "0.1.0"
 dependencies = [
+ "diesel",
+ "diesel_migrations",
+ "libsqlite3-sys",
  "llm",
- "persistence",
  "reqwest",
  "tauri",
  "tauri-build",
@@ -2532,17 +2534,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b2a4787296e9989611394c33f193f676704af1686e70b8f8033ab5ba9a35a94"
 
 [[package]]
-name = "persistence"
-version = "0.1.0"
-dependencies = [
- "diesel",
- "diesel_migrations",
- "libsqlite3-sys",
- "serde",
- "tauri",
-]
-
-[[package]]
 name = "phf"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3587,7 +3578,6 @@ dependencies = [
  "percent-encoding",
  "rand 0.8.5",
  "raw-window-handle",
- "regex",
  "reqwest",
  "semver",
  "serde",
@@ -3641,7 +3631,6 @@ dependencies = [
  "png",
  "proc-macro2",
  "quote",
- "regex",
  "semver",
  "serde",
  "serde_json",

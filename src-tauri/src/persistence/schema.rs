@@ -10,7 +10,7 @@ diesel::table! {
 diesel::table! {
     messages (id) {
         id -> Integer,
-        role -> Nullable<Text>,
+        role -> Text,
         content -> Text,
         chat_id -> Integer,
     }

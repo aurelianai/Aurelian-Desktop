@@ -114,7 +114,9 @@ dependencies = [
  "diesel_migrations",
  "libsqlite3-sys",
  "llm",
+ "rand 0.8.5",
  "reqwest",
+ "serde",
  "tauri",
  "tauri-build",
 ]

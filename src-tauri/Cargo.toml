@@ -19,6 +19,8 @@ llm = { git = "https://github.com/rustformers/llm", version = "0.2.0-dev" }
 diesel = { version = "2.0.4", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
 diesel_migrations = { version = "2.0.0", features = ["sqlite"] }
 libsqlite3-sys = { version = "0.26.0", features = ["bundled"] }
+serde = "1.0.185"
+rand = "0.8.5"
 
 
 [features]

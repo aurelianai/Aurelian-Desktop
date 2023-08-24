@@ -5,8 +5,8 @@ CREATE TABLE chats (
 
 CREATE TABLE messages (
     id INTEGER PRIMARY KEY NOT NULL,
-    role TEXT CHECK( role IN ('USER', 'MODEL') ),
+    role TEXT NOT NULL CHECK( role IN ('USER', 'MODEL') ),
     content TEXT NOT NULL,
     chat_id INTEGER NOT NULL,
-    FOREIGN KEY(chat_id) REFERENCES chats(id)
+    FOREIGN KEY(chat_id) REFERENCES chats(id) ON DELETE CASCADE
 );

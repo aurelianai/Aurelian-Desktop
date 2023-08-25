@@ -13,10 +13,8 @@ use tauri::Manager;
 
 fn main() {
 	tauri::Builder::default()
-		.manage(AppState {
-			db: Default::default(),
-			model: Default::default(),
-		})
+		.manage(DB(Mutex::new(None)))
+		.manage(ModelState(Mutex::new(None)))
 		.invoke_handler(tauri::generate_handler![
 			get_chats,
 			insert_chat,
@@ -44,17 +42,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 		File::create(app_data_dir)?;
 	}
 
-	connect_db(app.state::<AppState>(), app.app_handle()).unwrap();
+	connect_db(app.state::<DB>(), app.app_handle()).unwrap();
 
-	let state = app.state::<AppState>();
-	let Some(ref mut connection) = *state.db.lock().unwrap() else { panic!() };
+	let state = app.state::<DB>();
+	let Some(ref mut connection) = *state.0.lock().unwrap() else { panic!() };
 	run_migrations(connection).unwrap();
 
 	Ok(())
 }
 
-/// Global state in the desktop app
-pub struct AppState {
-	pub db: Mutex<Option<SqliteConnection>>,
-	pub model: Mutex<Option<Box<dyn llm::Model>>>,
-}
+pub struct DB(Mutex<Option<SqliteConnection>>);
+pub struct ModelState(Mutex<Option<ModelManager>>);

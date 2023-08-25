@@ -1,6 +1,8 @@
 import type { Chat, Message } from './types'
 import { writable } from 'svelte/store'
 import { invoke } from '@tauri-apps/api/tauri'
+import { type Event, emit, listen } from '@tauri-apps/api/event'
+import { Bucket } from './bucket'
 
 export const ChatStore = writable<Chat[]>()
 
@@ -61,17 +63,27 @@ export type InferenceUpdate = {
 export async function* complete(id: number, sig: AbortSignal): AsyncGenerator<InferenceUpdate> {
    let messages = await getMessages(id)
    console.log("Got Messages", JSON.stringify(messages))
+
    await invoke("load_default_model")
+
+   const events = new Bucket<InferenceUpdate>();
+
+   const unlisten = await listen('click', (event: Event<InferenceUpdate>) => {
+      events.push(event.payload)
+   })
+
    await invoke("complete", {
       msgs: messages
    })
 
-   for (let i = 0; i < 10; i++) {
-      yield {
-         delta: "hi ",
-         err: null,
-      }
+   let message = ""
+
+   for await (const ev of events) {
+      message += ev.delta
+      yield ev
    }
 
-   await newMessage(id, "MODEL", "Dummy Response")
+   await newMessage(id, "MODEL", message)
+
+   unlisten()
 }

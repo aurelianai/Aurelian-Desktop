@@ -14,14 +14,14 @@ pub struct NewChat {
 	pub title: String,
 }
 
-use crate::AppState;
+use crate::DB;
 use tauri::State;
 
 #[tauri::command]
-pub fn get_chats(state: State<AppState>) -> Result<Vec<Chat>, String> {
+pub fn get_chats(state: State<DB>) -> Result<Vec<Chat>, String> {
 	use crate::persistence::schema::chats::dsl::chats;
 
-	let Some(ref mut connection) = *state.db.lock().unwrap() else { panic!() };
+	let Some(ref mut connection) = *state.0.lock().unwrap() else { panic!() };
 
 	chats
 		.select(Chat::as_select())
@@ -30,11 +30,11 @@ pub fn get_chats(state: State<AppState>) -> Result<Vec<Chat>, String> {
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn insert_chat(state: State<AppState>, new_chat: NewChat) -> Result<i32, String> {
+pub fn insert_chat(state: State<DB>, new_chat: NewChat) -> Result<i32, String> {
 	use crate::persistence::schema::chats;
 	use crate::persistence::schema::chats::dsl::*;
 
-	let Some(ref mut connection) = *state.db.lock().unwrap() else { panic!() };
+	let Some(ref mut connection) = *state.0.lock().unwrap() else { panic!() };
 
 	diesel::insert_into(chats::table)
 		.values(&new_chat)
@@ -44,10 +44,10 @@ pub fn insert_chat(state: State<AppState>, new_chat: NewChat) -> Result<i32, Str
 }
 
 #[tauri::command]
-pub fn update_chat(state: State<AppState>, c: Chat) -> Result<usize, String> {
+pub fn update_chat(state: State<DB>, c: Chat) -> Result<usize, String> {
 	use crate::persistence::schema::chats::dsl::*;
 
-	let Some(ref mut connection) = *state.db.lock().unwrap() else { panic!() };
+	let Some(ref mut connection) = *state.0.lock().unwrap() else { panic!() };
 
 	diesel::update(chats)
 		.filter(id.eq(c.id))
@@ -57,10 +57,10 @@ pub fn update_chat(state: State<AppState>, c: Chat) -> Result<usize, String> {
 }
 
 #[tauri::command]
-pub fn delete_chat(state: State<AppState>, pkey: i32) -> Result<usize, String> {
+pub fn delete_chat(state: State<DB>, pkey: i32) -> Result<usize, String> {
 	use crate::persistence::schema::chats::dsl::*;
 
-	let Some(ref mut connection) = *state.db.lock().unwrap() else { panic!() };
+	let Some(ref mut connection) = *state.0.lock().unwrap() else { panic!() };
 
 	diesel::delete(chats.filter(id.eq(pkey)))
 		.execute(connection)

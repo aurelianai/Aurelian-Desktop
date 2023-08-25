@@ -16,14 +16,14 @@ pub struct NewMessage {
 	pub chat_id: i32,
 }
 
-use crate::AppState;
+use crate::DB;
 use tauri::State;
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn get_messages(state: State<AppState>, c_id: i32) -> Result<Vec<Message>, String> {
+pub fn get_messages(state: State<DB>, c_id: i32) -> Result<Vec<Message>, String> {
 	use crate::persistence::schema::messages::dsl::*;
 
-	let Some(ref mut connection) = *state.db.lock().unwrap() else { panic!() };
+	let Some(ref mut connection) = *state.0.lock().unwrap() else { panic!() };
 
 	messages
 		.filter(chat_id.eq(c_id))
@@ -33,10 +33,10 @@ pub fn get_messages(state: State<AppState>, c_id: i32) -> Result<Vec<Message>, S
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn insert_message(state: State<AppState>, new_message: NewMessage) -> Result<usize, String> {
+pub fn insert_message(state: State<DB>, new_message: NewMessage) -> Result<usize, String> {
 	use crate::persistence::schema::messages;
 
-	let Some(ref mut connection) = *state.db.lock().unwrap() else { panic!() };
+	let Some(ref mut connection) = *state.0.lock().unwrap() else { panic!() };
 
 	diesel::insert_into(messages::table)
 		.values(&new_message)

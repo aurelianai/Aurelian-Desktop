@@ -2,7 +2,7 @@ pub mod chat;
 pub mod message;
 mod schema;
 
-use crate::AppState;
+use crate::DB;
 use diesel::prelude::*;
 use diesel::sqlite::Sqlite;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -10,10 +10,10 @@ use tauri::{AppHandle, State};
 
 /// Creates a [DatabaseConnection] to be managed by [tauri::State]. This is called in the setup function in the main Aurelian-Desktop crate `main.rs`
 /// This must return a Result see https://github.com/tauri-apps/tauri/issues/2533
-pub fn connect_db(state: State<'_, AppState>, app_handle: AppHandle) -> Result<(), ()> {
+pub fn connect_db(state: State<'_, DB>, app_handle: AppHandle) -> Result<(), ()> {
 	// Panics if mutex is poisoned
 	let db_url = get_conn_string(app_handle);
-	let mut db_conn_ptr = state.db.lock().unwrap();
+	let mut db_conn_ptr = state.0.lock().unwrap();
 	*db_conn_ptr = Some(SqliteConnection::establish(&db_url).unwrap());
 	Ok(())
 }

@@ -12,25 +12,39 @@ use tauri::{State, Window};
 /// Loads the default model, hardcoded for now
 /// Returns if model is already loaded
 #[tauri::command]
-pub fn load_default_model(state: State<ModelState>) -> Result<(), ()> {
-	let loaded_model_ptr = state.0.lock().unwrap();
+pub async fn load_default_model(state: State<'_, ModelState>) -> Result<(), ()> {
+	println!("Hit Model Load Function");
+
+	let mut loaded_model_ptr = state.0.lock().unwrap();
 
 	let model_loaded = (*loaded_model_ptr).is_some();
 
 	if !model_loaded {
+		println!("Model Not Loaded, loading now");
+
 		let model = llm::load_dynamic(
 			// This will be pulled in from db when better model management is here
 			Some(llm::ModelArchitecture::Llama),
 			std::path::Path::new("C:\\Users\\Ethan\\Downloads\\llama-2-7b-chat.ggmlv3.q2_K.bin"),
 			llm::TokenizerSource::Embedded,
-			Default::default(),
+			llm::ModelParameters {
+				use_gpu: false,
+				context_size: 2048,
+				..Default::default()
+			},
 			llm::load_progress_callback_stdout,
 		)
 		.unwrap();
 
+		println!("Model Loaded starting Session");
+
 		let session = model.start_session(Default::default());
 
-		*state.0.lock().unwrap() = Some(ModelManager { model, session })
+		println!("Session started now moving to set it in state!");
+
+		*loaded_model_ptr = Some(ModelManager { model, session });
+
+		println!("Model Loaded Successfully");
 	}
 
 	Ok(())
@@ -66,7 +80,7 @@ impl ModelManager {
 
 /// Due to my rust skill issues with memory being moved (idk), load_default_model must be called from the frontend BEFORE calling complete
 #[tauri::command(rename_all = "snake_case")]
-pub fn complete(
+pub async fn complete(
 	state: State<'_, ModelState>,
 	window: Window,
 	msgs: Vec<Message>,
@@ -76,39 +90,48 @@ pub fn complete(
 			InferenceUpdate {
 				delta: "".into(),
 				err: Some("Error formatting prompt".into()),
+				done: false,
 			}
 			.send(&window);
 			return Err(());
 		}
 		Ok(prompt) => prompt,
 	};
+	println!("Hit complete command");
 
 	let mut manager_ptr = state.0.lock().unwrap();
 	let manager: &mut ModelManager = (*manager_ptr).as_mut().unwrap();
 
-	match manager.complete(&prompt, |r| match r {
-		llm::InferenceResponse::InferredToken(t) => {
-			print!("{t}");
-			std::io::stdout().flush().unwrap();
+	println!("Starting Prompt Response");
 
-			InferenceUpdate {
-				delta: t,
-				err: None,
-			}
-			.send(&window);
+	let stats = manager
+		.complete(&prompt, |r| match r {
+			llm::InferenceResponse::InferredToken(t) => {
+				print!("{t}");
+				std::io::stdout().flush().unwrap();
 
-			Ok(llm::InferenceFeedback::Continue)
-		}
-		_ => Ok(llm::InferenceFeedback::Continue),
-	}) {
-		Err(e) => {
-			InferenceUpdate {
-				delta: "".into(),
-				err: Some(format!("{}", e)),
+				InferenceUpdate {
+					delta: t,
+					err: None,
+					done: false,
+				}
+				.send(&window);
+
+				Ok(llm::InferenceFeedback::Continue)
 			}
-			.send(&window);
-			return Err(());
-		}
-		Ok(_) => return Ok(()),
+			_ => Ok(llm::InferenceFeedback::Continue),
+		})
+		.unwrap();
+
+	print!("\n");
+	println!("INF STATS: {}", stats.to_string());
+
+	InferenceUpdate {
+		delta: String::from(""),
+		err: None,
+		done: true,
 	}
+	.send(&window);
+
+	Ok(())
 }

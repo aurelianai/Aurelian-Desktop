@@ -45,7 +45,9 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 	connect_db(app.state::<DB>(), app.app_handle()).unwrap();
 
 	let state = app.state::<DB>();
-	let Some(ref mut connection) = *state.0.lock().unwrap() else { panic!() };
+	let Some(ref mut connection) = *state.0.lock().unwrap() else {
+		panic!()
+	};
 	run_migrations(connection).unwrap();
 
 	Ok(())

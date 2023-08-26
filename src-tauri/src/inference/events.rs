@@ -5,6 +5,7 @@ use tauri::Window;
 pub struct InferenceUpdate {
 	pub delta: String,
 	pub err: Option<String>,
+	pub done: bool,
 }
 
 impl InferenceUpdate {

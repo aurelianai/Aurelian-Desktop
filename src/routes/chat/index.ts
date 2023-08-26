@@ -58,6 +58,7 @@ export const newMessage = async (chat_id: number, role: "USER" | "MODEL", conten
 export type InferenceUpdate = {
    delta: string,
    err: string | null,
+   done: boolean,
 }
 
 export async function* complete(id: number, sig: AbortSignal): AsyncGenerator<InferenceUpdate> {
@@ -66,22 +67,31 @@ export async function* complete(id: number, sig: AbortSignal): AsyncGenerator<In
 
    await invoke("load_default_model")
 
+   console.log("Finished loading model")
+
    const events = new Bucket<InferenceUpdate>();
 
-   const unlisten = await listen('click', (event: Event<InferenceUpdate>) => {
+   const unlisten = await listen('inference-update', (event: Event<InferenceUpdate>) => {
+      console.log(`RECV: ${JSON.stringify(event.payload)}`)
       events.push(event.payload)
    })
 
-   await invoke("complete", {
+   console.log("Invoking complete tauri command!")
+   let complete_promise = invoke("complete", {
       msgs: messages
    })
+   console.log("Complete command returned!")
 
    let message = ""
 
    for await (const ev of events) {
-      message += ev.delta
-      yield ev
+      if (!ev.done) {
+         message += ev.delta
+         yield ev
+      } else { break }
    }
+
+   await complete_promise
 
    await newMessage(id, "MODEL", message)
 

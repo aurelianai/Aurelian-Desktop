@@ -3,7 +3,7 @@ import type { LayoutLoad } from './$types'
 import { ChatStore, getChats } from '.'
 
 export const load = (async () => {
-   console.log("setting chat store to", JSON.stringify(getChats()))
+   console.log("setting chat store to", JSON.stringify(await getChats()))
    try {
       ChatStore.set(await getChats())
    } catch (err) {

@@ -2,8 +2,6 @@
 	import { createEventDispatcher } from 'svelte';
 	import { Icon, PaperAirplane } from 'svelte-hero-icons';
 
-	export let disabled: boolean;
-
 	let dispatch = createEventDispatcher();
 	let chat_content = '';
 	let ta: HTMLTextAreaElement;
@@ -73,7 +71,6 @@
 		class="p-4 pr-12 break-words border-none rounded-md shadow-2xl resize-none textarea bg-surface-100-800-token"
 		placeholder="Prompt"
 		rows="1"
-		{disabled}
 		on:input={scale_ta_height}
 	/>
 	<button

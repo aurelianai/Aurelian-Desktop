@@ -9,6 +9,7 @@
 	} from 'svelte-hero-icons';
 	import type { Chat } from './types';
 	import { createEventDispatcher } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { focusTrap } from '@skeletonlabs/skeleton';
 	import { updateChat } from '.';
 	import { page } from '$app/stores';
@@ -31,12 +32,16 @@
 	};
 </script>
 
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore missing-declaration -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
 	class:variant-ringed-primary={isActive}
 	class:variant-soft-surface={hover && !isActive}
 	class="flex items-center w-full h-10 p-2 font-medium rounded-md text-md"
 	on:mouseenter={() => (hover = true)}
 	on:mouseleave={() => (hover = false)}
+	on:click={() => goto(`/chat/${chat.id}`)}
 >
 	{#if !confirm_edit}
 		<button

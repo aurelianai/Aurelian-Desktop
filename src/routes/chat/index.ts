@@ -2,6 +2,7 @@ import type { Chat, Message } from './types'
 import { writable } from 'svelte/store'
 import { invoke } from '@tauri-apps/api/tauri'
 import { type Event, emit, listen } from '@tauri-apps/api/event'
+
 import { Bucket } from './bucket'
 
 export const ChatStore = writable<Chat[]>()
@@ -37,22 +38,20 @@ export const getMessages = async (c_id: number): Promise<Message[]> => {
 }
 
 export const newMessage = async (chat_id: number, role: "USER" | "MODEL", content: string): Promise<Message> => {
-   try {
-      return await invoke("insert_message", {
-         new_message: {
-            role,
-            content,
-            chat_id,
-         },
-      })
-   } catch (e) {
-      console.log(e)
-   }
+   return await invoke("insert_message", {
+      new_message: {
+         role,
+         content,
+         chat_id,
+      },
+   })
+}
 
-   return {
-      role,
-      content,
-   }
+export const updateMessage = async (update: string, message_id: number) => {
+   return await invoke("update_message", {
+      update,
+      message_id
+   })
 }
 
 export type InferenceUpdate = {
@@ -63,37 +62,31 @@ export type InferenceUpdate = {
 
 export async function* complete(id: number, sig: AbortSignal): AsyncGenerator<InferenceUpdate> {
    let messages = await getMessages(id)
-   console.log("Got Messages", JSON.stringify(messages))
 
-   await invoke("load_default_model")
-
-   console.log("Finished loading model")
+   await invoke("load_default_model", {
+      chat_id: id
+   })
 
    const events = new Bucket<InferenceUpdate>();
 
    const unlisten = await listen('inference-update', (event: Event<InferenceUpdate>) => {
-      console.log(`RECV: ${JSON.stringify(event.payload)}`)
       events.push(event.payload)
    })
 
-   console.log("Invoking complete tauri command!")
-   let complete_promise = invoke("complete", {
+   invoke("complete", {
       msgs: messages
    })
-   console.log("Complete command returned!")
 
    let message = ""
 
    for await (const ev of events) {
-      if (!ev.done) {
+      if (ev.done) {
+         break
+      } else {
          message += ev.delta
          yield ev
-      } else { break }
+      }
    }
-
-   await complete_promise
-
-   await newMessage(id, "MODEL", message)
 
    unlisten()
 }

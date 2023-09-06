@@ -22,6 +22,7 @@ fn main() {
 			delete_chat,
 			get_messages,
 			insert_message,
+			update_message,
 			load_default_model,
 			complete,
 		])

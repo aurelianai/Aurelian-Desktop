@@ -1,50 +1,66 @@
 mod events;
+mod hardware;
 mod prompt_processing;
 
-use crate::inference::events::InferenceUpdate;
-use crate::inference::prompt_processing::generate_prompt;
+use crate::inference::{
+	events::InferenceUpdate, hardware::autodetect_num_threads, prompt_processing::generate_prompt,
+};
 use crate::persistence::message::Message;
 use crate::ModelState;
 use std::convert::Infallible;
-use std::io::Write;
+use std::{
+	io::Write,
+	sync::{Arc, Mutex},
+};
 use tauri::{State, Window};
 
 /// Loads the default model, hardcoded for now
 /// Returns if model is already loaded
-#[tauri::command]
-pub async fn load_default_model(state: State<'_, ModelState>) -> Result<(), ()> {
-	println!("Hit Model Load Function");
-
+#[tauri::command(rename_all = "snake_case")]
+pub async fn load_default_model(state: State<'_, ModelState>, chat_id: i32) -> Result<(), ()> {
 	let mut loaded_model_ptr = state.0.lock().unwrap();
 
-	let model_loaded = (*loaded_model_ptr).is_some();
-
-	if !model_loaded {
-		println!("Model Not Loaded, loading now");
-
+	if (*loaded_model_ptr).is_none() {
 		let model = llm::load_dynamic(
 			// This will be pulled in from db when better model management is here
 			Some(llm::ModelArchitecture::Llama),
 			std::path::Path::new("C:\\Users\\Ethan\\Downloads\\llama-2-7b-chat.ggmlv3.q2_K.bin"),
 			llm::TokenizerSource::Embedded,
 			llm::ModelParameters {
-				use_gpu: false,
-				context_size: 2048,
+				use_gpu: false,     // TODO Detect Automatically, offload optimal number of layers
+				context_size: 2048, // TODO create setting for this
 				..Default::default()
 			},
 			llm::load_progress_callback_stdout,
 		)
 		.unwrap();
 
-		println!("Model Loaded starting Session");
+		let session = model.start_session(llm::InferenceSessionConfig {
+			n_threads: autodetect_num_threads(),
+			n_batch: 512, // Default from llama.cpp
+			..Default::default()
+		});
 
-		let session = model.start_session(Default::default());
+		*loaded_model_ptr = Some(ModelManager {
+			model,
+			session,
+			chat_id,
+		});
+	} else {
+		let Some(ref mut model_manager) = *loaded_model_ptr else {
+			panic!()
+		};
 
-		println!("Session started now moving to set it in state!");
-
-		*loaded_model_ptr = Some(ModelManager { model, session });
-
-		println!("Model Loaded Successfully");
+		if model_manager.chat_id != chat_id {
+			println!("Dropping session for new chat");
+			model_manager.session = model_manager
+				.model
+				.start_session(llm::InferenceSessionConfig {
+					n_threads: autodetect_num_threads(),
+					n_batch: 512,
+					..Default::default()
+				})
+		}
 	}
 
 	Ok(())
@@ -54,6 +70,7 @@ pub async fn load_default_model(state: State<'_, ModelState>) -> Result<(), ()> 
 pub struct ModelManager {
 	pub model: Box<dyn llm::Model>,
 	pub session: llm::InferenceSession,
+	pub chat_id: i32,
 }
 
 impl ModelManager {
@@ -97,18 +114,29 @@ pub async fn complete(
 		}
 		Ok(prompt) => prompt,
 	};
-	println!("Hit complete command");
 
-	let mut manager_ptr = state.0.lock().unwrap();
-	let manager: &mut ModelManager = (*manager_ptr).as_mut().unwrap();
+	let cancelled = Arc::new(Mutex::new(false));
+	let callback_ref = Arc::clone(&cancelled);
 
-	println!("Starting Prompt Response");
+	let ev_id = window.listen("cancel-generation", move |_| {
+		*callback_ref.lock().unwrap() = true;
+		println!("Got cancellation event");
+	});
+
+	let Some(ref mut manager) = *state.0.lock().unwrap() else {
+		panic!()
+	};
 
 	let stats = manager
 		.complete(&prompt, |r| match r {
 			llm::InferenceResponse::InferredToken(t) => {
 				print!("{t}");
 				std::io::stdout().flush().unwrap();
+
+				if *cancelled.lock().unwrap() {
+					println!("Halting Generation");
+					return Ok(llm::InferenceFeedback::Halt);
+				}
 
 				InferenceUpdate {
 					delta: t,
@@ -123,8 +151,7 @@ pub async fn complete(
 		})
 		.unwrap();
 
-	print!("\n");
-	println!("INF STATS: {}", stats.to_string());
+	println!("\nINF STATS: {}", stats.to_string());
 
 	InferenceUpdate {
 		delta: String::from(""),
@@ -133,5 +160,6 @@ pub async fn complete(
 	}
 	.send(&window);
 
+	window.unlisten(ev_id);
 	Ok(())
 }

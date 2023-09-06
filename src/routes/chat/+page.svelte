@@ -3,12 +3,15 @@
 	import Input from './Input.svelte';
 	import Suggestions from './Suggestions.svelte';
 	import type { Chat, Message } from './types';
-	import { ChatStore, newMessage, complete, newChat } from '.';
+	import { ChatStore, newMessage, complete, newChat, updateMessage } from '.';
 	import { goto } from '$app/navigation';
+	import { Icon, Stop } from 'svelte-hero-icons';
+	import { emit } from '@tauri-apps/api/event';
 
 	export let messages: Message[] = [];
 	let chat: Chat | null = null;
 	let generating: boolean = false;
+	let controller: AbortController;
 	let signal: AbortSignal;
 
 	const handle_message_send = async (event: any) => {
@@ -18,23 +21,27 @@
 		$ChatStore = [chat, ...$ChatStore];
 
 		messages = [
-			...messages,
-			await newMessage(chat.id, 'USER', event.detail.message_content)
+			await newMessage(chat.id, 'USER', event.detail.message_content),
+			await newMessage(chat.id, 'MODEL', '')
 		];
 
-		let modelResponse: Message = { role: 'MODEL', content: '' };
-		messages = [...messages, modelResponse];
-
-		const controller = new AbortController();
+		controller = new AbortController();
 		signal = controller.signal;
 
 		for await (const update of complete(chat.id, signal)) {
 			if (update.err) {
-				console.log('Error ocurred during generation:', update.err);
+				// TODO throw error here
 				break;
 			}
-			modelResponse.content += update.delta;
-			messages[-1] = modelResponse;
+			if (signal.aborted) {
+				console.log(
+					'Signal aborted in page.svelte. Stopped generation of tokens'
+				);
+				emit('cancel-generation');
+				break;
+			}
+			await updateMessage(update.delta, messages[1].id);
+			messages[1].content += update.delta;
 		}
 
 		generating = false;
@@ -58,5 +65,15 @@
 </div>
 
 <div class="fixed right-0 flex justify-center flex-grow left-64 bottom-4">
-	<Input on:send_message={handle_message_send} disabled={generating} />
+	{#if !generating}
+		<Input on:send_message={handle_message_send} />
+	{:else}
+		<button
+			class="btn variant-filled-primary px-2 py-1 space-x-2 rounded-md"
+			on:click={() => controller.abort()}
+		>
+			<span><Icon src={Stop} class="w-8 h-8" /></span>
+			<span class="font-semibold">Stop</span>
+		</button>
+	{/if}
 </div>

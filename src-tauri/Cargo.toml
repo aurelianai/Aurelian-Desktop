@@ -22,6 +22,7 @@ diesel_migrations = { version = "2.0.0", features = ["sqlite"] }
 libsqlite3-sys = { version = "0.26.0", features = ["bundled"] }
 serde = "1.0.185"
 rand = "0.8.5"
+num_cpus = "1.16.0"
 
 
 [features]

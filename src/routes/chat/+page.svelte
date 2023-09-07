@@ -1,16 +1,22 @@
 <script lang="ts">
-	import MessageBubble from './MessageBubble.svelte';
-	import Input from './Input.svelte';
-	import Suggestions from './Suggestions.svelte';
-	import type { Chat, Message } from './types';
-	import { ChatStore, newMessage, complete, newChat, updateMessage } from '.';
+	import MessageBubble from '$lib/chat/components/MessageBubble.svelte';
+	import Input from '$lib/chat/components/Input.svelte';
+	import Suggestions from '$lib/chat/components/Suggestions.svelte';
+	import type { Chat, Message } from '../../lib/chat/ts/types';
+	import {
+		ChatStore,
+		newChat,
+		newMessage,
+		updateMessage,
+		complete
+	} from '../../lib/chat/ts';
 	import { goto } from '$app/navigation';
 	import { Icon, Stop } from 'svelte-hero-icons';
 	import { emit } from '@tauri-apps/api/event';
 
 	export let messages: Message[] = [];
 	let chat: Chat | null = null;
-	let generating: boolean = false;
+	let generating = false;
 	let controller: AbortController;
 	let signal: AbortSignal;
 
@@ -34,10 +40,7 @@
 				break;
 			}
 			if (signal.aborted) {
-				console.log(
-					'Signal aborted in page.svelte. Stopped generation of tokens'
-				);
-				emit('cancel-generation');
+				await emit('cancel-generation');
 				break;
 			}
 			await updateMessage(update.delta, messages[1].id);

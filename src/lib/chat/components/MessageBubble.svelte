@@ -1,7 +1,7 @@
 <script lang="ts">
 	import SvelteMarkdown from 'svelte-markdown';
 	import { Avatar } from '@skeletonlabs/skeleton';
-	import type { Message } from './types';
+	import type { Message } from '$lib/chat/ts/types';
 	export let msg: Message;
 </script>
 

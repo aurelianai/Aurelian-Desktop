@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit'
 import type { LayoutLoad } from './$types'
-import { ChatStore, getChats } from '.'
+import { ChatStore, getChats } from '$lib/chat/ts'
 
 export const load = (async () => {
    console.log("setting chat store to", JSON.stringify(await getChats()))

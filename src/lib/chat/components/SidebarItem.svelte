@@ -7,11 +7,11 @@
 		XCircle,
 		CheckCircle
 	} from 'svelte-hero-icons';
-	import type { Chat } from './types';
+	import type { Chat } from '$lib/chat/ts/types';
 	import { createEventDispatcher } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { focusTrap } from '@skeletonlabs/skeleton';
-	import { updateChat } from '.';
+	import { updateChat } from '$lib/chat/ts';
 	import { page } from '$app/stores';
 
 	export let chat: Chat;

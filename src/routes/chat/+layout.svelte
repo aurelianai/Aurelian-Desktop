@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Sidebar from './Sidebar.svelte';
+	import Sidebar from '$lib/chat/components/Sidebar.svelte';
 </script>
 
 <div class="flex h-full">

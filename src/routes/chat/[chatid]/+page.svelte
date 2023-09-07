@@ -1,31 +1,41 @@
 <script lang="ts">
-	import MessageBubble from '../MessageBubble.svelte';
-	import Input from '../Input.svelte';
+	import MessageBubble from '$lib/chat/components/MessageBubble.svelte';
+	import Input from '$lib/chat/components/Input.svelte';
 	import type { PageData } from './$types';
-	import type { Message } from '../types';
-	import { complete, newMessage } from '..';
+	import { newMessage, updateMessage, complete } from '$lib/chat/ts';
+	import { Icon, Stop } from 'svelte-hero-icons';
+	import { emit } from '@tauri-apps/api/event';
 
 	export let data: PageData;
 	let generating = false;
+	let controller: AbortController;
 	let signal: AbortSignal;
 
 	const handle_message_send = async (event: any) => {
-		data.messages = [
-			...data.messages,
-			await newMessage(data.chatid, 'USER', event.detail.message_content)
-		];
 		generating = true;
 
-		let modelResponse: Message = { role: 'MODEL', content: '' };
-		data.messages = [...data.messages, modelResponse];
+		data.messages = [
+			...data.messages,
+			await newMessage(data.chatid, 'USER', event.detail.message_content),
+			await newMessage(data.chatid, 'MODEL', '')
+		];
 
-		const controller = new AbortController();
+		controller = new AbortController();
 		signal = controller.signal;
 
 		for await (const update of complete(data.chatid, signal)) {
-			// TODO check error
-			modelResponse.content += update.delta;
-			data.messages[-1] = modelResponse;
+			if (update.err) {
+				// TODO throw error here
+				break;
+			}
+			if (signal.aborted) {
+				await emit('cancel-generation');
+			}
+			await updateMessage(
+				update.delta,
+				data.messages[data.messages.length - 1].id
+			);
+			data.messages[data.messages.length - 1].content += update.delta;
 		}
 
 		generating = false;
@@ -42,5 +52,15 @@
 </div>
 
 <div class="fixed right-0 flex justify-center flex-grow left-64 bottom-4">
-	<Input on:send_message={handle_message_send} disabled={generating} />
+	{#if !generating}
+		<Input on:send_message={handle_message_send} />
+	{:else}
+		<button
+			class="btn variant-filled-primary px-2 py-1 space-x-2 rounded-md"
+			on:click={() => controller.abort()}
+		>
+			<span><Icon src={Stop} class="w-8 h-8" /></span>
+			<span class="font-semibold">Stop</span>
+		</button>
+	{/if}
 </div>

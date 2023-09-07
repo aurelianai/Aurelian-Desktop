@@ -3,7 +3,7 @@
 	import { Icon, ArrowLeftOnRectangle, Cog6Tooth } from 'svelte-hero-icons';
 	import SidebarItem from './SidebarItem.svelte';
 	import type { PopupSettings } from '@skeletonlabs/skeleton';
-	import { ChatStore, deleteChat } from '.';
+	import { ChatStore, deleteChat } from '$lib/chat/ts';
 	import { goto } from '$app/navigation';
 
 	const delete_event_handler = async (event: any) => {

@@ -17,9 +17,16 @@
 		arrow
 	} from '@floating-ui/dom';
 	import { storePopup, setInitialClassState } from '@skeletonlabs/skeleton';
+	setInitialClassState();
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 
-	setInitialClassState();
+	import Navbar from '$lib/Navbar.svelte';
 </script>
 
-<slot />
+<div class="fixed relative top-0 bottom-0 left-0 right-0">
+	<div class="top-0 left-0 right-0">
+		<Navbar />
+	</div>
+
+	<slot />
+</div>

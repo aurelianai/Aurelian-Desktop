@@ -1,1 +1,5 @@
-You are in the place to download
+<script lang="ts">
+	import ModelSearch from './ModelSearch.svelte';
+</script>
+
+<ModelSearch />

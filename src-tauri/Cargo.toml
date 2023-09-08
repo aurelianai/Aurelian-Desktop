@@ -13,7 +13,7 @@ rust-version = "1.59"
 tauri-build = { version = "1.2.1", features = [] }
 
 [dependencies]
-tauri = { version = "1.2.4", features = [ "fs-all", "http-all", "path-all", "process-command-api"] }
+tauri = { version = "1.2.4", features = [ "shell-open", "fs-all", "http-all", "path-all", "process-command-api"] }
 reqwest = { version = "0.11", features= ["json"] }
 llm = { git = "https://github.com/rustformers/llm", version = "0.2.0-dev" }
 rocket = { version = "=0.5.0-rc.3", features = ["json"] }

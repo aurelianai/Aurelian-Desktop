@@ -8,7 +8,6 @@
 	let model_hover = false;
 
 	page.subscribe((p) => {
-		console.log(p.url.pathname);
 		model_active = p.url.pathname.startsWith('/model');
 		chat_active = p.url.pathname.startsWith('/chat');
 	});
